@@ -5,6 +5,7 @@ For more details about this component, please refer to the documentation at
 https://home-assistant.io/components/knx/
 """
 import logging
+from typing import Dict
 
 import voluptuous as vol
 
@@ -117,6 +118,133 @@ class KNXConfig(object):
         be switched but also have a timer functionality.
         """
         return self._state_address
+
+
+class FlexibleKNXGroupAddress():
+    """Representation of devices connected to a KNX group address."""
+
+    def __init__(self, config: KNXConfig, callback):
+        """Initialize the device."""
+        self.__config = config
+        self.__data = None
+        _LOGGER.debug("Initalizing KNX group address %s", self.address)
+
+        def handle_knx_message(addr, data):
+            """Handle an incoming KNX frame.
+
+            Handle an incoming frame and update our status if it contains
+            information relating to this device.
+            """
+            if (addr == self.state_address) or (addr == self.address):
+                self.__data = data
+                callback(self)
+
+        KNXTUNNEL.register_listener(self.address, handle_knx_message)
+        if self.state_address:
+            KNXTUNNEL.register_listener(self.state_address, handle_knx_message)
+
+    @property
+    def name(self):
+        """The entity's display name."""
+        return self.__config.name
+
+    @property
+    def config(self):
+        """The entity's configuration."""
+        return self.__config
+
+    @property
+    def should_poll(self):
+        """Return the state of the polling, if needed."""
+        return self.__config.should_poll
+
+    @property
+    def address(self):
+        """Return the KNX group address."""
+        return self.__config.address
+
+    @property
+    def state_address(self):
+        """Return the KNX group address."""
+        return self.__config.state_address
+
+    @property
+    def cache(self):
+        """The name given to the entity."""
+        return self.__config.config.get('cache', True)
+
+    @property
+    def raw_data_value(self):
+        """Return a map of current knx state, keyed by the config-name."""
+        return self.__data
+
+    def group_write(self, value):
+        """Write to the group address."""
+        KNXTUNNEL.group_write(self.address, [value])
+
+    def update(self):
+        """Get the state from KNX bus or cache."""
+        from knxip.core import KNXException
+
+        try:
+            if self.state_address:
+                res = KNXTUNNEL.group_read(
+                    self.state_address, use_cache=self.cache)
+            else:
+                res = KNXTUNNEL.group_read(self.address, use_cache=self.cache)
+
+            if res:
+                self.__data = res
+            else:
+                _LOGGER.debug(
+                    "Unable to read from KNX address: %s (None)", self.address)
+
+        except KNXException:
+            _LOGGER.exception(
+                "Unable to read from KNX address: %s", self.address)
+            return False
+
+
+class KNXFlexibleEntity(Entity):
+    """Flexible Enity bases representation of multiple (up to n) ga's."""
+
+    def __init__(self, hass, configs: Dict[str, KNXConfig]):
+        """Initialize the device using a config Map. Key is a config name."""
+        self.__configs = configs
+        self.__addresses = {}
+
+        self.__state = {}
+
+        for config_name, config in self.__configs.items():
+            address = FlexibleKNXGroupAddress(config,
+                                              self.__notify_state_change)
+            self.__addresses[config_name] = address
+
+    def __notify_state_change(self, updated_ga: FlexibleKNXGroupAddress):
+        for config_name, group_address in self.__addresses.items():
+            if group_address == updated_ga:
+                self.__state[config_name] = updated_ga.raw_data_value
+                self.schedule_update_ha_state()
+
+    def config(self, config_name: str) -> KNXConfig:
+        """Access the KNXConfig by name."""
+        return self.__configs[config_name]
+
+    @property
+    def raw_state(self):
+        """Return the current state map of the entity."""
+        return self.__state
+
+    @property
+    def address(self) -> Dict[str, FlexibleKNXGroupAddress]:
+        """Return the group address map of the entity to interact with bus."""
+        return self.__addresses
+
+    def update(self):
+        """Get the state from KNX bus or cache."""
+        for ga in self.__addresses.values():
+            ga.update()
+        self.schedule_update_ha_state()
 
 
 class KNXGroupAddress(Entity):
