@@ -8,6 +8,7 @@ https://home-assistant.io/components/switch.knx/
 import voluptuous as vol
 
 from homeassistant.components.knx import (KNXConfig, KNXFlexibleEntity)
+from homeassistant.core import HomeAssistant
 from homeassistant.components.light import (Light,
                                             PLATFORM_SCHEMA,
                                             SUPPORT_BRIGHTNESS,
@@ -39,7 +40,7 @@ DEFAULT_BRIGHTNESS = b'\x00'
 SUPPORT_KNX = (SUPPORT_BRIGHTNESS)
 
 
-def setup_platform(hass, config: dict, add_devices, discovery_info=None):
+def setup_platform(hass: HomeAssistant, config: dict, add_devices, discovery_info=None):
     """Setup the KNX switch platform."""
     add_devices([KNXLight(hass, config)])
 
@@ -47,7 +48,7 @@ def setup_platform(hass, config: dict, add_devices, discovery_info=None):
 class KNXLight(KNXFlexibleEntity, Light):
     """Representation of a KNX light device."""
 
-    def __init__(self, hass, config):
+    def __init__(self, hass: HomeAssistant, config):
         """
         Initialize the device using a config Map.
 

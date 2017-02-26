@@ -12,6 +12,7 @@ import voluptuous as vol
 from homeassistant.const import (
     EVENT_HOMEASSISTANT_STOP, CONF_HOST, CONF_PORT)
 from homeassistant.helpers.entity import Entity
+from homeassistant.core import HomeAssistant
 import homeassistant.helpers.config_validation as cv
 
 REQUIREMENTS = ['knxip==0.3.3']
@@ -34,7 +35,7 @@ CONFIG_SCHEMA = vol.Schema({
 }, extra=vol.ALLOW_EXTRA)
 
 
-def setup(hass, config):
+def setup(hass: HomeAssistant, config):
     """Setup the connection to the KNX IP interface."""
     global KNXTUNNEL
 
@@ -208,7 +209,7 @@ class FlexibleKNXGroupAddress():
 class KNXFlexibleEntity(Entity):
     """Flexible Enity bases representation of multiple (up to n) ga's."""
 
-    def __init__(self, hass, configs: Dict[str, KNXConfig]):
+    def __init__(self, hass: HomeAssistant, configs: Dict[str, KNXConfig]):
         """Initialize the device using a config Map. Key is a config name."""
         self.__configs = configs
         self.__addresses = {}
@@ -250,7 +251,7 @@ class KNXFlexibleEntity(Entity):
 class KNXGroupAddress(Entity):
     """Representation of devices connected to a KNX group address."""
 
-    def __init__(self, hass, config):
+    def __init__(self, hass: HomeAssistant, config):
         """Initialize the device."""
         self._config = config
         self._state = False
@@ -344,7 +345,7 @@ class KNXMultiAddressDevice(Entity):
     names = {}
     values = {}
 
-    def __init__(self, hass, config, required, optional=None):
+    def __init__(self, hass: HomeAssistant, config, required, optional=None):
         """Initialize the device.
 
         The namelist argument lists the required addresses. E.g. for a dimming
