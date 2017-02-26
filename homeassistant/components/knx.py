@@ -211,6 +211,7 @@ class KNXFlexibleEntity(Entity):
 
     def __init__(self, hass: HomeAssistant, configs: Dict[str, KNXConfig]):
         """Initialize the device using a config Map. Key is a config name."""
+        self.hass = hass
         self.__configs = configs
         self.__addresses = {}
 
