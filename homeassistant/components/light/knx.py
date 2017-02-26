@@ -8,6 +8,7 @@ https://home-assistant.io/components/switch.knx/
 import voluptuous as vol
 
 from homeassistant.components.knx import (KNXConfig, KNXFlexibleEntity)
+from homeassistant.helpers.entity import generate_entity_id
 from homeassistant.core import HomeAssistant
 from homeassistant.components.light import (Light,
                                             PLATFORM_SCHEMA,
@@ -23,6 +24,9 @@ ON_OFF_BLOCK = 'on_off'
 
 DEFAULT_NAME = 'KNX Light'
 DEPENDENCIES = ['knx']
+
+DOMAIN = "light"
+ENTITY_ID_FORMAT = DOMAIN + ".{}"
 
 ga_item = vol.Schema({
     vol.Required("address"): str,
@@ -42,7 +46,7 @@ SUPPORT_KNX = (SUPPORT_BRIGHTNESS)
 
 def setup_platform(hass: HomeAssistant, config: dict, add_devices, discovery_info=None):
     """Setup the KNX switch platform."""
-    add_devices([KNXLight(hass, config)])
+    add_devices([KNXLight(hass, config)], True)
 
 
 class KNXLight(KNXFlexibleEntity, Light):
@@ -60,8 +64,10 @@ class KNXLight(KNXFlexibleEntity, Light):
             light_settings.update({
                 CONF_BRIGHTNESS: KNXConfig(config[CONF_BRIGHTNESS])
             })
+        self.hass = hass
         self.__name = config.get(CONF_NAME)
-        super().__init__(hass, light_settings)
+        self.entity_id = generate_entity_id(ENTITY_ID_FORMAT, self.name, hass=self.hass)
+        super(KNXLight, self).__init__(hass, light_settings)
 
     @property
     def name(self) -> Optional[str]:
