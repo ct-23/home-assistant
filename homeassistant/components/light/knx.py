@@ -13,7 +13,8 @@ from homeassistant.core import HomeAssistant
 from homeassistant.components.light import (Light,
                                             PLATFORM_SCHEMA,
                                             SUPPORT_BRIGHTNESS,
-                                            ATTR_BRIGHTNESS)
+                                            ATTR_BRIGHTNESS,
+                                            ENTITY_ID_FORMAT)
 from homeassistant.const import (CONF_NAME,
                                  CONF_BRIGHTNESS)
 import homeassistant.helpers.config_validation as cv
@@ -25,8 +26,6 @@ ON_OFF_BLOCK = 'on_off'
 DEFAULT_NAME = 'KNX Light'
 DEPENDENCIES = ['knx']
 
-DOMAIN = "light"
-ENTITY_ID_FORMAT = DOMAIN + ".{}"
 
 ga_item = vol.Schema({
     vol.Required("address"): str,
